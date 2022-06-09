@@ -1,5 +1,35 @@
 const express = require("express");
 const bodyParser = require("body-parser");
+const mongo = require("mongodb").MongoClient;
+
+// Ein Docker MongoDB Container auf meinem Laptop
+const url = "mongodb://172.17.0.2:27017/";
+
+let db;
+
+mongo.connect(
+  url,
+
+  {
+    useNewUrlParser: true,
+
+    useUnifiedTopology: true,
+  },
+
+  (err, client) => {
+    if (err) {
+      console.error("Bling:" + err);
+
+      return;
+    } else {
+      console.log("found");
+    }
+
+    db = client.db("students");
+
+    console.log("running");
+  }
+);
 
 const port = 3000;
 const app = express();
@@ -11,16 +41,18 @@ let students = [
 app.use(bodyParser.urlencoded({ extended: false }));
 app.use(bodyParser.json());
 
-app.get("/students", (req, res) => {
-  res.send(students);
-  logSend(students);
+ app.get("/students",async (req, res) => {
+  let data = await findMongoData();
+  console.log(data);
+  res.send(data)
+  logSend(data);
 });
 
 app.get("/student/:id", (req, res) => {
   id = req.params.id;
-  let student = students.find((element) => element.id == id);
-  res.send(student);
-  logSend(student);
+  let data = findMongoData(id);
+  res.send(data)
+  logSend(data);
 });
 
 app.post("/students", (req, res) => {
@@ -48,9 +80,18 @@ app.put("/student/:id", (req, res) => {
 });
 
 app.listen(port, () =>
- console.log(`Hello world app listening on port ${port}!`)
+  console.log(`Hello world app listening on port ${port}!`)
 );
 
 function logSend(data) {
   console.log(data, "was sent");
+}
+async function findMongoData(id = undefined){
+    db.collection("students")
+    .find()
+    .toArray(function (err, result) {
+      if (err) throw err;
+      console.log(result)
+      return result;
+    });
 }
