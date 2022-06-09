@@ -1,5 +1,6 @@
 const express = require("express");
 const bodyParser = require("body-parser");
+const { query } = require("express");
 const mongo = require("mongodb").MongoClient;
 
 // Ein Docker MongoDB Container auf meinem Laptop
@@ -43,15 +44,14 @@ app.use(bodyParser.json());
 
  app.get("/students",async (req, res) => {
   let data = await findMongoData();
-  console.log(data);
-  res.send(data)
+  res.send(data);
   logSend(data);
 });
 
-app.get("/student/:id", (req, res) => {
+app.get("/student/:id", async (req, res) => {
   id = req.params.id;
-  let data = findMongoData(id);
-  res.send(data)
+  const data = await findMongoData(id);
+  res.send(data);
   logSend(data);
 });
 
@@ -87,11 +87,23 @@ function logSend(data) {
   console.log(data, "was sent");
 }
 async function findMongoData(id = undefined){
+  return new Promise(resolve =>{
+    console.warn(id)
+    if(id == undefined){
     db.collection("students")
     .find()
     .toArray(function (err, result) {
       if (err) throw err;
-      console.log(result)
-      return result;
+      resolve(result);
     });
+  }else{
+    const query = {"id":parseInt(id)};
+    db.collection("students")
+    .findOne(query, function (err, result) {
+      if (err) throw err;
+      resolve(result);
+    });
+  }
+  })
+    
 }
